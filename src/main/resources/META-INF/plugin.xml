@@ -1,0 +1,58 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
+    <id>com.herrlapsus.idea-leap</id>
+
+    <!-- Public plugin name should be written in Title Case.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
+    <name>Idea-leap</name>
+
+    <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
+    <vendor url="https://github.com/HerrLapsus">HerrLapsus</vendor>
+
+    <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
+         Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
+    <description>
+        <![CDATA[
+    <h2>
+        Port of <a href="https://github.com/unblevable/quick-scope">Leap</a> for IdeaVim.
+    </h2
+
+    <br>
+    <p>
+        Allows for easy navigation on a line. In general, using <code>s</code>, <code>S</code>. Leap improves over sneak, by providing unique characters after every occurrence of the first.
+    </p
+
+    <h2>Usage</h2>
+    <p>
+        Add <code>set leap</code> to your <code>.ideavimrc</code>.
+        <br>
+    </p>
+
+    <h2>Issues</h2>
+    <p>Please log any issues to <a href="https://github.com/herrlapsus/idea-leap">the corresponding GitHub repo.</a></p>
+
+  ]]>
+    </description>
+
+    <!-- Product and plugin compatibility requirements.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+    <depends>com.intellij.modules.platform</depends>
+    <depends>IdeaVIM</depends>
+
+    <!-- Extension points defined by the plugin.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+    <extensions defaultExtensionNs="IdeaVIM">
+        <vimExtension implementation="com.joshestein.ideavimquickscope.IdeaVimQuickscopeExtension" name="quickscope">
+            <aliases>
+                <alias name="https://github.com/unblevable/quick-scope"/>
+                <alias name="unblevable/quick-scope"/>
+            </aliases>
+        </vimExtension>
+    </extensions>
+    <applicationListeners>
+        <listener class="com.herrlapsus.idea-leap.IdeaLeapListener"
+                  topic="com.intellij.ide.ui.LafManagerListener"/>
+    </applicationListeners>
+</idea-plugin>
