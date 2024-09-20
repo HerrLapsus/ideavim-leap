@@ -1,23 +1,34 @@
 plugins {
     id("java")
     id("org.jetbrains.kotlin.jvm") version "1.9.25"
-    id("org.jetbrains.intellij") version "1.17.4"
+    id("org.jetbrains.intellij.platform") version "2.0.1"
 }
 
 group = "com.herrlapsus"
 version = "0.1.0"
 
+
+
 repositories {
     mavenCentral()
+
+    intellijPlatform {
+        defaultRepositories()
+    }
 }
 
 // Configure Gradle IntelliJ Plugin
 // Read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
-intellij {
-    version.set("2021.2")
-//    type.set("IC") // Target IDE Platform
+dependencies {
+    intellijPlatform {
+        intellijIdeaCommunity("2024.2")
 
-    plugins.set(listOf("IdeaVIM:1.9.2"))
+        bundledPlugin("com.intellij.java")
+
+        instrumentationTools()
+
+        plugin("IdeaVim", "2.16.0")
+    }
 }
 
 tasks {
@@ -31,8 +42,8 @@ tasks {
     }
 
     patchPluginXml {
-        sinceBuild.set("232")
-        untilBuild.set("242.*")
+        sinceBuild.set("242")
+        untilBuild.set("252")
     }
 
     signPlugin {
