@@ -38,9 +38,6 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import javax.swing.KeyStroke
 
-
-private fun command(keys: String) = "<Plug>(leap-$keys)"
-
 class IdeaVimLeapExtension : VimExtension {
     override fun getName(): String = "leap"
 
