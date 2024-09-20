@@ -25,8 +25,14 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build
 
+      - name: Get version from Gradle
+        id: get_version
+        run: echo "VERSION=$(./gradlew -q properties | grep ^version: | awk '{print $2}')" >> $GITHUB_ENV
+
+
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: plugin-artifact
+          name: plugin-artifact-${{ env.VERSION }}
           path: build/distributions/*.zip
+          overwrite: true

@@ -23,8 +23,6 @@ dependencies {
     intellijPlatform {
         intellijIdeaCommunity("2024.2")
 
-        bundledPlugin("com.intellij.java")
-
         instrumentationTools()
 
         plugin("IdeaVim", "2.16.0")
