@@ -21,21 +21,21 @@
 package com.herrlapsus.ideavimleap
 
 import com.intellij.openapi.actionSystem.DataContext
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.editor.EditorCustomElementRenderer
+import com.intellij.openapi.editor.Inlay
 import com.intellij.openapi.editor.ScrollType
-import com.intellij.openapi.editor.colors.EditorColors
+import com.intellij.openapi.editor.colors.EditorFontType
 import com.intellij.openapi.editor.markup.*
+import com.intellij.ui.JBColor
 import com.maddyhome.idea.vim.VimPlugin
 import com.maddyhome.idea.vim.command.MappingMode
-import com.maddyhome.idea.vim.common.TextRange
 import com.maddyhome.idea.vim.extension.VimExtension
 import com.maddyhome.idea.vim.extension.VimExtensionFacade
 import com.maddyhome.idea.vim.extension.VimExtensionHandler
-import java.awt.Font
+import java.awt.Graphics
+import java.awt.Rectangle
 import java.awt.event.KeyEvent
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 import javax.swing.KeyStroke
 
 class IdeaVimLeapExtension : VimExtension {
@@ -62,9 +62,9 @@ class IdeaVimLeapExtension : VimExtension {
 
 private class LeapHandler(
     private val direction: Direction,
-    private val highlightHandler: HighlightHandler = HighlightHandler()
 ) : VimExtensionHandler {
     private val insertedLabels = mutableListOf<Pair<Int, Char>>()
+    private val inlays = mutableListOf<Inlay<*>>()
 
     override fun execute(editor: Editor, context: DataContext) {
         val charOne = getChar(editor) ?: return
@@ -81,15 +81,12 @@ private class LeapHandler(
             else -> {
                 // draw labels if necessary or jump if single match
                 for ((index, possibleJumpTarget) in possibleJumpTargets.take(26).withIndex()) {
-                    val labelPosition = if (direction == Direction.BACKWARD) possibleJumpTarget else possibleJumpTarget + index
-                    insertLabel(editor, labelPosition, 'a' + index)
-                    highlightHandler.highlightRange(editor, TextRange(labelPosition - 2, labelPosition))
+                    insertLabel(editor, possibleJumpTarget, 'a' + index)
                 }
                 val labelChar = getChar(editor) ?: return
-                val labelPosition = insertedLabels.find { it.second == labelChar }?.first ?: return
-                jumpTo(editor, labelPosition)
-                clearLabels(editor)
-                highlightHandler.clearAllHighlighters()
+                val labelPosition = insertedLabels.find { it.second == labelChar }?.first
+                if (labelPosition != null) jumpTo(editor, labelPosition)
+                clearLabels()
             }
         }
     }
@@ -109,30 +106,35 @@ private class LeapHandler(
     }
 
     private fun insertLabel(editor: Editor, position: Int, char: Char) {
-        val labelPosition = position + 2
-        ApplicationManager.getApplication().runWriteAction() {
-            editor.document.insertString(labelPosition, char.toString())
+        val inlayModel = editor.inlayModel
+        val inlay = inlayModel.addInlineElement(position + 2, true, LabelRenderer(char))
+        if (inlay != null) {
+            insertedLabels.add(Pair(position, char))
+            inlays.add(inlay)
         }
-        insertedLabels.add(Pair(labelPosition, char))
     }
 
-    private fun clearLabels(editor: Editor) {
-        val labelsToRemove = insertedLabels.reversed()
-        ApplicationManager.getApplication().runWriteAction() {
-            for ((position, _) in labelsToRemove) {
-                editor.document.deleteString(position, position + 1)
-            }
-        }
+    private fun clearLabels() {
+        inlays.forEach { it.dispose() }
+        inlays.clear()
         insertedLabels.clear()
     }
 
     private fun jumpTo(editor: Editor, position: Int) {
         position.let(editor.caretModel::moveToOffset)
         editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
+    }
+}
 
-        val highlighter = HighlightHandler()
-        highlighter.highlightRange(editor, TextRange(position, position + 2))
-        highlighter.setClearHighlightsTimer()
+private class LabelRenderer(private val char: Char) : EditorCustomElementRenderer {
+    override fun paint(inlay: Inlay<*>, g: Graphics, targetRegion: Rectangle, textAttributes: TextAttributes) {
+        g.color = JBColor.RED // Set the color for the label
+        g.drawString(char.toString(), targetRegion.x, targetRegion.y + targetRegion.height / 2)
+    }
+
+    override fun calcWidthInPixels(inlay: Inlay<*>): Int {
+        return inlay.editor.contentComponent.getFontMetrics(inlay.editor.colorsScheme.getFont(EditorFontType.PLAIN))
+            .charWidth(char)
     }
 }
 
@@ -183,59 +185,4 @@ private enum class Direction(val offset: Int) {
         }
         return match
     }
-}
-
-private class HighlightHandler {
-    private var editor: Editor? = null
-    private val highlighters: MutableSet<RangeHighlighter> = mutableSetOf()
-
-    fun highlightRange(editor: Editor, range: TextRange) {
-        clearAllHighlighters()
-
-        this.editor = editor
-
-        if (range.isMultiple) {
-            for (i in 0 until range.size()) {
-                highlightSingleRange(editor, range.startOffsets[i]..range.endOffsets[i])
-            }
-        } else {
-            highlightSingleRange(editor, range.startOffset..range.endOffset)
-        }
-    }
-
-    fun clearAllHighlighters() {
-        highlighters.forEach { highlighter ->
-            editor?.markupModel?.removeHighlighter(highlighter)
-        }
-
-        highlighters.clear()
-    }
-
-    private fun highlightSingleRange(editor: Editor, range: ClosedRange<Int>) {
-        val highlighter = editor.markupModel.addRangeHighlighter(
-            range.start,
-            range.endInclusive,
-            HighlighterLayer.SELECTION,
-            getHighlightTextAttributes(),
-            HighlighterTargetArea.EXACT_RANGE
-        )
-
-        highlighters.add(highlighter)
-    }
-
-    fun setClearHighlightsTimer(delay: Long = 500) {
-        Executors.newSingleThreadScheduledExecutor().schedule({
-            ApplicationManager.getApplication().invokeLater {
-                clearAllHighlighters()
-            }
-        }, delay, TimeUnit.MILLISECONDS)
-    }
-
-    private fun getHighlightTextAttributes() = TextAttributes(
-        null,
-        EditorColors.TEXT_SEARCH_RESULT_ATTRIBUTES.defaultAttributes.backgroundColor,
-        editor?.colorsScheme?.getColor(EditorColors.CARET_COLOR),
-        EffectType.SEARCH_MATCH,
-        Font.PLAIN
-    )
 }
