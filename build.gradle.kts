@@ -17,6 +17,11 @@ repositories {
     }
 }
 
+// Disable building searchable options (faster and avoids the task entirely)
+intellijPlatform {
+    buildSearchableOptions.set(false)
+}
+
 // Use Java toolchain instead of sourceCompatibility/targetCompatibility
 java {
     toolchain {
@@ -51,5 +56,10 @@ tasks {
 
     publishPlugin {
         token.set(System.getenv("PUBLISH_TOKEN"))
+    }
+
+    // Ensure the plugin ZIP (build/distributions/*.zip) is created when running `build`
+    named("build") {
+        dependsOn(named("buildPlugin"))
     }
 }
