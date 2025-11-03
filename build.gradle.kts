@@ -33,8 +33,6 @@ dependencies {
     intellijPlatform {
         intellijIdeaCommunity("2025.2")
 
-        instrumentationTools()
-
         plugin("IdeaVim", "2.27.0")
     }
 }
