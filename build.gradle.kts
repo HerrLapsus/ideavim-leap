@@ -1,11 +1,11 @@
 plugins {
     id("java")
-    id("org.jetbrains.kotlin.jvm") version "1.9.25"
+    id("org.jetbrains.kotlin.jvm") version "2.2.21"
     id("org.jetbrains.intellij.platform") version "2.0.1"
 }
 
 group = "com.herrlapsus"
-version = "0.1.0"
+version = "0.2.0"
 
 
 
@@ -17,31 +17,32 @@ repositories {
     }
 }
 
-// Configure Gradle IntelliJ Plugin
-// Read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
+// Use Java toolchain instead of sourceCompatibility/targetCompatibility
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
+
+// Configure Kotlin to use the same toolchain and modern compiler options
+kotlin {
+    jvmToolchain(21)
+}
+
 dependencies {
     intellijPlatform {
-        intellijIdeaCommunity("2024.2")
+        intellijIdeaCommunity("2025.2")
 
         instrumentationTools()
 
-        plugin("IdeaVim", "2.16.0")
+        plugin("IdeaVim", "2.27.0")
     }
 }
 
 tasks {
-    // Set the JVM compatibility versions
-    withType<JavaCompile> {
-        sourceCompatibility = "17"
-        targetCompatibility = "17"
-    }
-    withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions.jvmTarget = "17"
-    }
-
     patchPluginXml {
         sinceBuild.set("242")
-        untilBuild.set("252")
+        untilBuild.set("*")
     }
 
     signPlugin {
